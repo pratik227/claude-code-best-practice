@@ -1,0 +1,141 @@
+# Agent Teams
+
+Agent Teams is a pattern where multiple specialized teammates collaborate to build a complete workflow. Each teammate focuses on a single component, coordinating through a shared task list to agree on data contracts and interfaces.
+
+## Overview
+
+This pattern is demonstrated through a **time orchestration workflow** that displays the current Dubai time as a visual SVG card. The workflow follows the **Command -> Agent -> Skill** architecture pattern:
+
+- A **command** orchestrates the flow and handles user interaction
+- An **agent** fetches the live current time for Dubai using a preloaded skill
+- A **skill** creates a visual SVG time card from the fetched data
+
+::: info
+All files are created inside `agent-teams/.claude/` -- not in the repo root's `.claude/` directory. This keeps the agent team's output self-contained and runnable via `cd agent-teams && claude`.
+:::
+
+## Team Composition
+
+The agent team consists of three specialized teammates that work in parallel:
+
+### 1. Command Architect
+
+Designs and implements the `/time-orchestrator` command.
+
+**Responsibilities:**
+- Invoke the `time-agent` via the Agent tool (not bash) to fetch the current time for Dubai, UAE (Asia/Dubai timezone, UTC+4)
+- Invoke the `time-svg-creator` skill via the Skill tool to render the SVG card from the fetched time data
+- Use model: haiku in the frontmatter
+- Enforce sequential flow, correct tool usage (Agent tool for agents, Skill tool for skills), and produce an output summary
+
+**Output**: `agent-teams/.claude/commands/time-orchestrator.md`
+
+### 2. Agent Engineer
+
+Designs and implements the `time-agent` and its preloaded `time-fetcher` skill.
+
+**Responsibilities:**
+- Fetch the current time for Dubai (Asia/Dubai, UTC+4) using Bash with:
+  ```bash
+  TZ='Asia/Dubai' date '+%Y-%m-%d %H:%M:%S %Z'
+  ```
+- Return the time value, timezone name, and formatted string to the command
+- Use frontmatter: tools (Bash), model: haiku, color: blue, maxTurns: 3
+- Preload the `time-fetcher` skill via the `skills:` field
+
+**Output**:
+- `agent-teams/.claude/agents/time-agent.md`
+- `agent-teams/.claude/skills/time-fetcher/SKILL.md`
+
+::: tip
+The `time-fetcher` skill sets `user-invocable: false` since it is agent-only domain knowledge -- it should not appear in the `/` slash-command menu.
+:::
+
+### 3. Skill Designer
+
+Designs and implements the `time-svg-creator` skill with supporting reference and example files.
+
+**Responsibilities:**
+- Receive a time value, timezone, and formatted string from the calling context
+- Create a self-contained SVG time card for Dubai showing the current time
+- Write the SVG to `agent-teams/output/dubai-time.svg`
+- Write a markdown summary to `agent-teams/output/output.md`
+- Use the exact time provided -- never re-fetch
+- Keep templates in `reference.md` (SVG markup with placeholders, markdown output template) and example pairs in `examples.md`
+
+**Output**:
+- `agent-teams/.claude/skills/time-svg-creator/SKILL.md`
+- `agent-teams/.claude/skills/time-svg-creator/reference.md`
+- `agent-teams/.claude/skills/time-svg-creator/examples.md`
+- `agent-teams/output/` directory for output files
+
+## Data Contract
+
+All three teammates coordinate through a shared task list to agree on the data contract:
+
+```
+{
+  time: string,       // e.g., "17:24:20"
+  timezone: string,   // e.g., "GST (UTC+4)"
+  formatted: string   // e.g., "2026-03-12 17:24:20 +0400"
+}
+```
+
+::: warning Coordination is Key
+The agent returns `{time, timezone, formatted}`, the command passes it through context, and the skill consumes it. All three teammates must align on this interface -- they start in parallel since the components are independent, but they must agree on the data contract.
+:::
+
+## Parallel Execution
+
+The three teammates can start in parallel because the components are independent. They only need to agree on the data interface, not wait on each other's implementation:
+
+```
+┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+│ Command Architect│  │ Agent Engineer  │  │ Skill Designer  │
+│                 │  │                 │  │                 │
+│ time-orchestrator│  │ time-agent      │  │ time-svg-creator│
+│ command          │  │ + time-fetcher  │  │ + reference     │
+│                 │  │   skill         │  │ + examples      │
+└────────┬────────┘  └────────┬────────┘  └────────┬────────┘
+         │                    │                    │
+         └────────────────────┼────────────────────┘
+                              │
+                    Shared Data Contract
+                  {time, timezone, formatted}
+```
+
+## Example Output
+
+When the workflow runs, it produces:
+
+### Dubai Time Summary (`output.md`)
+
+```markdown
+# Dubai Time Card
+
+- **Time**: 17:24:20
+- **Timezone**: GST (UTC+4)
+- **Date**: 2026-03-12
+- **Full**: 2026-03-12 17:24:20 +0400
+- **SVG**: `agent-teams/output/dubai-time.svg`
+
+Generated by time-svg-creator skill.
+```
+
+The SVG time card (`dubai-time.svg`) is a visual representation of the current time in Dubai.
+
+## Key Patterns
+
+::: details Architecture Pattern: Command -> Agent -> Skill
+1. **Command as Orchestrator**: The `/time-orchestrator` command handles user interaction and coordinates the entire workflow
+2. **Agent for Data Fetching**: The `time-agent` uses its preloaded `time-fetcher` skill to get live data, then returns structured results
+3. **Skill for Rendering**: The `time-svg-creator` skill runs independently, consuming data from the command context to produce visual output
+4. **Clean Separation**: Fetch (agent) -> Render (skill) -- each component has a single responsibility
+:::
+
+::: details Collaboration Pattern: Shared Task List
+- Teammates create tasks in a shared task list to coordinate the data contract
+- Each teammate can work independently on their component
+- The data contract serves as the interface agreement between components
+- No teammate needs to wait for another's implementation to start their own work
+:::
