@@ -46,6 +46,6 @@ docs/
 
 ## Links
 
-- [GitHub](https://github.com/pratik227)
+- [GitHub](https://github.com/pratik227/claude-code-best-practice)
 - [Twitter](https://x.com/PratikPatel_227)
 - [Sponsor](https://github.com/sponsors/pratik227)

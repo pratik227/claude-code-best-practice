@@ -136,7 +136,7 @@ export default withMermaid(defineConfig({
     ],
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/pratik227' },
+      { icon: 'github', link: 'https://github.com/pratik227/claude-code-best-practice' },
       { icon: 'x', link: 'https://x.com/PratikPatel_227' },
       {
         icon: {

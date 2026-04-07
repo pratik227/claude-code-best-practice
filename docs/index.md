@@ -17,7 +17,7 @@ hero:
       link: /best-practices/subagents
     - theme: alt
       text: GitHub
-      link: https://github.com/pratik227
+      link: https://github.com/pratik227/claude-code-best-practice
 
 features:
   - icon: 🤖
